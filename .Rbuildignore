@@ -7,5 +7,4 @@
 ^error-badrequest\.PNG$
 ^packrat/
 ^\.Rprofile$
-^sanbox/
-^tests/
+^sandbox/

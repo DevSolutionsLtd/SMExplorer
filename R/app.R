@@ -9,6 +9,7 @@ app <- shinyApp(
 
   ui = fluidPage(
     theme = shinythemes::shinytheme("superhero"),
+
     titlePanel(title = "SMExplorer",
                windowTitle = "Shiny app for social media metrics"),
 
@@ -87,7 +88,7 @@ app <- shinyApp(
         ),
 
         mainPanel(
-          tags$div(title = "Plots will be displayed here.",
+          div(title = "Plots will be displayed here.",
                    plotOutput("twtDensity")),
 
           div(style = "display:inline-block; vertical-align:top;
@@ -102,11 +103,7 @@ app <- shinyApp(
               width = "70px",
               choices = c(25, 50, 100, 150, 200, 250, 300, 500, 1000))),
 
-          div(style = "display:inline-block; vertical-align:top;
-              padding-left: 10px; padding-top: 20px; margin-left: 30px",
-              bookmarkButton()),
-
-          tableOutput("mostEmotive"),
+          div(tableOutput("mostEmotive")),
 
           width = 9
 
@@ -137,9 +134,9 @@ app <- shinyApp(
     output$twtDensity <- renderPlot({
 
       main_objects <- prepareObjects(dataInput())
-      spl <- main_objects$split
       orig <- main_objects$original
       pol <- main_objects$polarity
+      RT <- main_objects$retweets
       polWordTable <- createWordList(pol)
 
       # options for the various plots
@@ -194,7 +191,7 @@ app <- shinyApp(
       }
       else if (input$outputstyle == "Network") {
         col3 <- color()
-        RT <- dplyr::mutate(spl[['TRUE']],
+        RT <- dplyr::mutate(RT,
                      sender = substr(text, 5, regexpr(':', text) - 1))
         edglst <- as.data.frame(cbind(sender = tolower(RT$sender),
                                       receiver = tolower(RT$screenName)))
