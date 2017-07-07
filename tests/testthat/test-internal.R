@@ -29,6 +29,12 @@ logi <- c(T, F)
 df['isRetweet'] <- rep(logi, nrow(df)/length(logi))
 retVal <- suppressWarnings(prepareObjects(df))
 
+og <- retVal$original
+og$ev <- sapply(retVal$polarity, function(x) x$all$polarity)
+dt <- split(og, sign(og$ev))
+pt <- createWordList(retVal$polarity)
+bow <- processBagofWords(dt, pt)
+
 # Tests
 test_that(desc = "Colours for the wordcloud are correct", {
   expect_equal(color()[1], "#A6CEE3")
@@ -48,13 +54,23 @@ test_that(desc = "Main objects are of the correct type and class", {
 })
 
 test_that("Word polarities are properly tabulated", {
-  tbl <- createWordList(retVal$polarity)
-  expect_equal(typeof(tbl), "list")
-  expect_equal(class(tbl), "list")
-  expect_equal(length(tbl), 2)
-  expect_equal(typeof(tbl[[1]]), "integer")
-  expect_equal(names(tbl[1]), "positiveWords")
-  expect_equal(names(tbl[2]), "negativeWords")
+  expect_equal(typeof(pt), "list")
+  expect_equal(class(pt), "list")
+  expect_equal(length(pt), 2)
+  expect_equal(typeof(pt[[1]]), "integer")
+  expect_equal(names(pt[1]), "positiveWords")
+  expect_equal(names(pt[2]), "negativeWords")
 })
 
-rm(df, logi, retVal)
+test_that("Density plot is properly rendered", {
+  expect_equal(class(plotDensity(df))[1], "gg")
+  expect_equal(class(plotDensity(df))[2], "ggplot")
+  expect_equal(length(plotDensity(df)), 9)
+})
+
+test_that("Bag-of-words is built", {
+  expect_equal(class(bow), "character")
+  expect_equal(length(bow), 3)
+})
+
+rm(df, logi, retVal, og, dt, pt, bow)
