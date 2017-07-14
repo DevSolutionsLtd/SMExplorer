@@ -4,7 +4,7 @@
 \alias{plotDensity}
 \title{Kernel density plots based on ggplot2 package.}
 \usage{
-plotDensity(data = x, entry = character(), daily = FALSE)
+plotDensity(data = x, entry = character(), daily = FALSE, input = NULL)
 }
 \arguments{
 \item{data}{The datafrane to be plotted from}
@@ -12,6 +12,8 @@ plotDensity(data = x, entry = character(), daily = FALSE)
 \item{entry}{The character input value i.e. the search term}
 
 \item{daily}{logical - TRUE if plot represents daily data}
+
+\item{input}{A character vector of date input for daily data}
 }
 \description{
 \code{plotDensity} Generates a density plot.
