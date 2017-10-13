@@ -1,13 +1,10 @@
 #' SMExplorer Shiny application object
 
 #' @return A Shiny application object
-#' @import lubridate
 #' @import shiny
 #' @importFrom network %v%
 app <- shinyApp(
   ui = fluidPage(
-    theme = shinythemes::shinytheme("superhero"),
-
     titlePanel(title = "SMExplorer",
                windowTitle = "Shiny app for social media metrics"),
 
@@ -62,7 +59,7 @@ app <- shinyApp(
 
                    conditionalPanel(
                      condition = "input.densityPeriod == 'Daily'",
-                     dateInput("singledate",
+                     dateInput("oneday",
                                label = "Date: ",
                                value = as.POSIXct(Sys.Date()) - 1,
                                max = as.POSIXct(Sys.Date()),
@@ -145,17 +142,18 @@ app <- shinyApp(
           dW <- plotDensity(data = checkPeriod,
                             entry = input$searchTerm,
                             daily = FALSE)
-          dW
+          print(dW)
         } else if (input$densityPeriod == "Daily") {
-          checkday <- dplyr::filter(
-            dataInput(),
-            lubridate::mday(created) == lubridate::day(input$singledate)
+          tmp <- dataInput()
+          index <- which(
+            lubridate::mday(tmp$created) == lubridate::day(input$oneday)
             )
-          densDay <- plotDensity(checkday,
+          checked_day <- tmp[index, ]
+          densDay <- plotDensity(checked_day,
                                  entry = input$searchTerm,
                                  daily = TRUE,
-                                 input = input$singledate)
-          densDay
+                                 input = input$oneday)
+          print(densDay)
         }
       }
       else if (input$outputstyle == "Platforms") {
@@ -194,11 +192,10 @@ app <- shinyApp(
       }
       else if (input$outputstyle == "Network") {
         col3 <- color()
-        RT <- dplyr::mutate(RT,
-                            sender = substr(text, 5, regexpr(':', text) - 1))
-        edglst <- as.data.frame(cbind(sender = tolower(RT$sender),
-                                      receiver = tolower(RT$screenName)))
-        edglst <- dplyr::count(edglst, sender, receiver)
+        RT$sender <- tolower(substr(RT$text, 5, regexpr(":", RT$text) - 1))
+        edglst <- as.data.frame(table(RT$sender, tolower(RT$screenName)),
+                                responseName = "n" )
+        edglst <- edglst[edglst$n != 0, ]
         rtnet <- network::network(edglst,
                                   matrix.type = 'edgelist',
                                   directed = TRUE,
