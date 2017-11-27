@@ -51,19 +51,21 @@ app <- shinyApp(
                      condition = "input.densityPeriod == 'Extended'",
                      dateRangeInput("daterange",
                                     label = "Date Range",
-                                    start = as.POSIXct(Sys.Date() - 8),
-                                    end = as.POSIXct(Sys.Date() - 1),
-                                    max = as.POSIXct(Sys.Date()),
+                                    start = Sys.Date() - 7,
+                                    end = Sys.Date(),
+                                    max = Sys.Date(),
                                     format = "dd M yyyy",
-                                    separator = "to")),
+                                    separator = "to")
+                     ),
 
                    conditionalPanel(
                      condition = "input.densityPeriod == 'Daily'",
                      dateInput("oneday",
                                label = "Date: ",
-                               value = as.POSIXct(Sys.Date()) - 1,
+                               value = NULL,
                                max = as.POSIXct(Sys.Date()),
-                               format = "D dd M yyyy"))
+                               format = "D dd M yyyy")
+                     )
                    ),
 
         conditionalPanel(condition = "input.outputstyle == 'Platforms'"),
@@ -106,14 +108,12 @@ app <- shinyApp(
     )
   ),
 
-  server = function(input, output) {
+  server = function(input, output, session) {
 
     dataInput <- reactive({
       if (input$oauth) {
-        twitteR::setup_twitter_oauth(consumer_key,
-                                     consumer_secret,
-                                     access_token,
-                                     access_secret)
+        twitteR::setup_twitter_oauth(consumer_key, consumer_secret,
+                                     access_token, access_secret)
       }
       input$goButton
       tweets <- isolate(
@@ -127,20 +127,36 @@ app <- shinyApp(
       df
     })
 
+    observe({
+
+      updateDateRangeInput(session,
+                           "daterange",
+                           label = "Date Range",
+                           start = Sys.Date() - 7,
+                           end = Sys.Date(),
+                           max = Sys.Date())
+
+      updateDateInput(session,
+                      "oneday",
+                      label = "Date: ",
+                      value = NULL,
+                      max = as.POSIXct(Sys.Date()))
+    })
+
 
     output$twtDensity <- renderPlot({
 
-      main_objects <- prepareObjects(dataInput())
+      main_objects <- .prepareObjects(dataInput())
       orig <- main_objects$original
       pol <- main_objects$polarity
       RT <- main_objects$retweets
-      polWordTable <- createWordList(pol)
+      polWordTable <- .createWordList(pol)
 
-      # Options for the various outputs
+      ## Options for the various outputs
       if (input$outputstyle == "Density plot") {
         if (input$densityPeriod == "Extended") {
           checkPeriod <- dataInput()
-          dW <- plotDensity(data = checkPeriod,
+          dW <- .plotDensity(data = checkPeriod,
                             entry = input$searchTerm,
                             daily = FALSE)
           print(dW)
@@ -150,7 +166,7 @@ app <- shinyApp(
             lubridate::mday(tmp$created) == lubridate::day(input$oneday)
             )
           checked_day <- tmp[index, ]
-          densDay <- plotDensity(checked_day,
+          densDay <- .plotDensity(checked_day,
                                  entry = input$searchTerm,
                                  daily = TRUE,
                                  input = input$oneday)
@@ -179,10 +195,10 @@ app <- shinyApp(
         orig$emotionalValence <- sapply(pol, function(x) x$all$polarity)
         polSplit <- split(orig, sign(orig$emotionalValence))
 
-        polText <- processBagofWords(polSplit, polWordTable)
+        polText <- .processBagofWords(polSplit, polWordTable)
 
-        corp <- make_corpus(polText)
-        col3 <- color()
+        corp <- .make_corpus(polText)
+        col3 <- .color()
         wordcloud::comparison.cloud(as.matrix(TermDocumentMatrix(corp)),
                                     max.words = 150,
                                     min.freq = 1,
@@ -192,7 +208,7 @@ app <- shinyApp(
                                     vfont = c("sans serif", "plain"))
       }
       else if (input$outputstyle == "Network") {
-        col3 <- color()
+        col3 <- .color()
         RT$sender <- tolower(substr(RT$text, 5, regexpr(":", RT$text) - 1))
         edglst <- as.data.frame(table(RT$sender, tolower(RT$screenName)),
                                 responseName = "n" )
@@ -220,13 +236,13 @@ app <- shinyApp(
     output$mostEmotive <- renderTable({
       if (input$emotiveExtremes && input$outputstyle == "Emotions plot")
       {
-        main_objects <- prepareObjects(dataInput())
+        main_objects <- .prepareObjects(dataInput())
         pol <- main_objects$polarity
         orig <- main_objects$original
-        polWordTable <- createWordList(pol)
+        polWordTable <- .createWordList(pol)
         orig$emotionalValence <- sapply(pol, function(x) x$all$polarity)
 
-        # Render the table
+        ## Render the table
         extremes <- data.frame(
           mostPositive = orig$text[which.max(orig$emotionalValence)],
           mostNegative = orig$text[which.min(orig$emotionalValence)]
