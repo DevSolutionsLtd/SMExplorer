@@ -18,18 +18,22 @@
 #' @importFrom wordcloud comparison.cloud
 server <- function(input, output, session) {
 
+  observe({
+    setup_twitter_oauth(consumer_key,
+                        consumer_secret,
+                        access_token,
+                        access_secret)
+  })
+
   dataInput <- reactive({
-    if (input$oauth) {
-      setup_twitter_oauth(consumer_key,
-                          consumer_secret,
-                          access_token,
-                          access_secret)
-    }
+
     input$goButton
+    num <- input$numLoaded
+
     tweets <- isolate(
       searchTwitter(
         as.character(input$searchTerm),
-        n = input$numLoaded,
+        n = num,
         since = as.character(input$daterange[1]),
         until = as.character(input$daterange[2])
       )
@@ -79,7 +83,8 @@ server <- function(input, output, session) {
                              daily = FALSE)
           print(dW)
         })
-      } else if (input$densityPeriod == "Daily") {
+      }
+      else if (input$densityPeriod == "Daily") {
         tmp <- dataInput()
         index <-
           which(mday(tmp$created) == day(input$oneday))
